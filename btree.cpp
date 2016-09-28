@@ -33,7 +33,7 @@ BTree::BTree(const configuration& state){
   for(uint32_t key_itr = 0;
       key_itr < node_.node_size_;
       key_itr++) {
-    node_.keys_[key_itr] = 0;
+    node_.keys_[key_itr] = -1;
   }
 
 }
@@ -51,7 +51,7 @@ bool BTree::InsertOffset(const KeyFieldType& key){
     // Look up current offset
     uint32_t old_value = node_.offset_;
 
-    if(old_value == node_.node_size_){
+    if(old_value >= node_.node_size_){
       out_of_space_count++;
       fail_count++;
       return false;

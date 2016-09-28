@@ -26,6 +26,7 @@ void Usage(FILE *out) {
           "   -m --mutable-size      :  # of mutable entries \n"
           "   -t --thread-count      :  # of threads \n"
           "   -l --loop-count        :  # of loops \n"
+          "   -o --op-count          :  # of ops \n"
   );
 }
 
@@ -35,6 +36,7 @@ static struct option opts[] = {
     { "mutable-size", optional_argument, NULL, 'm'},
     { "thread-count", optional_argument, NULL, 't'},
     { "loop-count", optional_argument, NULL, 'l'},
+    { "op-count", optional_argument, NULL, 'o'},
     { NULL, 0, NULL, 0}
 };
 
@@ -102,36 +104,49 @@ void ValidateLoopCount(const configuration &state) {
   printf("%s : %d\n", "loop_count", state.loop_count);
 }
 
+void ValidateOpCount(const configuration &state) {
+  if (state.op_count <= 0) {
+    printf("Invalid op_count :: %d\n", state.op_count);
+    exit(EXIT_FAILURE);
+  }
+
+  printf("%s : %d\n", "op_count", state.op_count);
+}
+
 void ParseArguments(int argc, char *argv[], configuration &state) {
   // Default Values
   state.synch_mode_type = SYNCH_MODE_TYPE_OFFSET;
   state.node_size = 1000;
   state.mutable_size = 64;
-  state.loop_count = 1000;
   state.thread_count = 4;
+  state.loop_count = 1000;
+  state.op_count = state.node_size/state.thread_count;
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "hk:t:l:s:m:", opts, &idx);
+    int c = getopt_long(argc, argv, "hs:k:m:o:t:l:", opts, &idx);
 
     if (c == -1) break;
 
     switch (c) {
+      case 's':
+        state.synch_mode_type = (SynchModeType) atoi(optarg);
+        break;
       case 'k':
         state.node_size = atoi(optarg);
+        break;
+      case 'm':
+        state.mutable_size = atoi(optarg);
+        break;
+      case 'o':
+        state.op_count = atoi(optarg);
         break;
       case 't':
         state.thread_count = atoi(optarg);
         break;
       case 'l':
         state.loop_count = atoi(optarg);
-        break;
-      case 's':
-        state.synch_mode_type = (SynchModeType) atoi(optarg);
-        break;
-      case 'm':
-        state.mutable_size = atoi(optarg);
         break;
 
       case 'h':
@@ -148,28 +163,29 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   }
 
   // Print configuration
+  ValidateSynchModeType(state);
   ValidateNodeSize(state);
-  ValidateMutableSize(state);
   ValidateThreadCount(state);
   ValidateLoopCount(state);
-  ValidateSynchModeType(state);
+  ValidateMutableSize(state);
+  ValidateOpCount(state);
 
   printf("----------------------------------\n\n");
 
 }
 
-void InsertOffset(BTree *tree, uint32_t key_count){
+void InsertOffset(BTree *tree, uint32_t op_count, uint32_t key_count){
 
-  for(uint32_t key_itr = 0; key_itr < key_count; key_itr++) {
+  for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
     auto key = rand() % key_count;
     tree->InsertOffset(key);
   }
 
 }
 
-void InsertMutable(BTree *tree, uint32_t key_count){
+void InsertMutable(BTree *tree, uint32_t op_count, uint32_t key_count){
 
-  for(uint32_t key_itr = 0; key_itr < key_count; key_itr++) {
+  for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
     auto key = rand() % key_count;
     tree->InsertMutable(key);
   }
@@ -184,7 +200,8 @@ int main(int argc, char **argv) {
 
   uint32_t thread_count = state.thread_count;
   uint32_t loop_count = state.loop_count;
-  uint32_t key_count = state.node_size/thread_count;
+  uint32_t op_count = state.op_count;
+  uint32_t key_count = state.node_size;
 
   Timer<> timer;
   std::vector<std::thread> thread_group;
@@ -209,11 +226,13 @@ int main(int argc, char **argv) {
       if(state.synch_mode_type == SYNCH_MODE_TYPE_OFFSET) {
         thread_group.push_back(std::thread(InsertOffset,
                                            &tree,
+                                           op_count,
                                            key_count));
       }
       else if(state.synch_mode_type == SYNCH_MODE_TYPE_MUTABLE) {
         thread_group.push_back(std::thread(InsertMutable,
                                            &tree,
+                                           op_count,
                                            key_count));
       }
 

@@ -30,6 +30,9 @@ class configuration {
   // # of loops
   uint32_t loop_count;
 
+  // # of ops
+  uint32_t op_count;
+
 };
 
 extern configuration state;
