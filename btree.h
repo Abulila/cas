@@ -2,14 +2,16 @@
 // BTREE HEADER
 //===----------------------------------------------------------------------===//
 
+#pragma once
+
 #include <cstdint>
 
 // max number of keys in a node
-const int MAX_KEYS = 11;
-const int MAX_KEYS_PLUS_ONE = MAX_KEYS + 1;
+const uint32_t MAX_KEYS = 1000000;
+const uint32_t MAX_KEYS_PLUS_ONE = MAX_KEYS + 1;
 
 // min number of keys in a node
-const int MIN_KEYS = MAX_KEYS/2;
+const uint32_t MIN_KEYS = MAX_KEYS/2;
 
 // null pointer
 const long NULL_PTR = -1L;

@@ -12,4 +12,8 @@ else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
+find_package (Threads)
+
 add_executable(cas btree.cpp main.cpp)
+
+target_link_libraries(cas ${CMAKE_THREAD_LIBS_INIT})
