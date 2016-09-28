@@ -94,19 +94,22 @@ bool BTree::InsertMutable(const KeyFieldType& item, bool upsert_mode){
       return false;
     }
 
-    uint32_t hash = item % node_.mutable_size_;
-    uint32_t* logical_slot = node_.mutable_ + hash;
-
-    // Claim logical space
-    bool status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
-
-    // Retry
-    if(status == false){
-      continue;
-    }
+    uint32_t* logical_slot = nullptr;
 
     // Check for upsert mode
     if(upsert_mode == false) {
+
+      uint32_t hash = item % node_.mutable_size_;
+      logical_slot = node_.mutable_ + hash;
+
+      // Claim logical space
+      bool status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
+
+      // Retry
+      if(status == false){
+        continue;
+      }
+
       // Search for key till horizon
       for(; value_itr < slot; value_itr++) {
         if(node_.keys_[value_itr] == item){
@@ -115,14 +118,20 @@ bool BTree::InsertMutable(const KeyFieldType& item, bool upsert_mode){
           return false;
         }
       }
+
     }
 
     // Success
     node_.keys_[slot] = item;
     success_count++;
 
-    // Release logical space
-    *logical_slot = 0;
+    // Check for upsert mode
+    if(upsert_mode == false) {
+
+      // Release logical space
+      *logical_slot = 0;
+
+    }
 
     return true;
   }
