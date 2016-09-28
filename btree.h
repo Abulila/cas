@@ -9,7 +9,7 @@ const int MAX_KEYS = 11;
 const int MAX_KEYS_PLUS_ONE = MAX_KEYS + 1;
 
 // min number of keys in a node
-const int MIN_KEYS = 5;
+const int MIN_KEYS = MAX_KEYS/2;
 
 // null pointer
 const long NULL_PTR = -1L;
@@ -19,16 +19,14 @@ typedef uint32_t KeyFieldType;
 typedef uint32_t DataFieldType;
 
 typedef struct {
-  KeyFieldType KeyField;
-  DataFieldType DataField;
-} ItemType;
+  // keys
+  KeyFieldType keys_[MAX_KEYS];
 
-typedef struct {
-  ItemType Key[MAX_KEYS];
-  // Fake pointers to child nodes
-  long Branch[MAX_KEYS_PLUS_ONE];
-  // Number of keys stored in node
-  int Count;
+  // fake pointers to child nodes
+  DataFieldType values_[MAX_KEYS_PLUS_ONE];
+
+  // number of keys stored in node
+  int offset_ = 0;
 } NodeType;
 
 class BTree {
@@ -37,18 +35,12 @@ class BTree {
   ~BTree();
 
   // insert item
-  bool Insert(const ItemType & item);
+  bool Insert(const KeyFieldType& item);
 
   // dump tree's contents
   void Dump(void);
 
  private:
-
-  // number of nodes in the B-tree
-  long num_nodes_;
-
-  // number of bytes per node
-  int  node_size_;
 
   // storage for current node being worked on
   NodeType current_node_;

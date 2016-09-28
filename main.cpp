@@ -8,9 +8,13 @@
 
 int main(void){
 
-  std::cout << "cas \n";
+  BTree tree;
 
-  // Do something with btree
+  tree.Insert(1);
+  tree.Insert(2);
+  tree.Insert(3);
+
+  tree.Dump();
 
   return 0;
 }
