@@ -6,17 +6,7 @@
 
 #include <cstdint>
 
-// max number of keys in a node
-const uint32_t MAX_KEYS = 1000;
-const uint32_t MAX_KEYS_PLUS_ONE = MAX_KEYS + 1;
-
-// min number of keys in a node
-const uint32_t MIN_KEYS = MAX_KEYS/2;
-
-// null pointer
-const long NULL_PTR = -1L;
-
-const uint32_t NUM_MUTABLE_BITS = 64;
+#include "configuration.h"
 
 typedef uint32_t KeyFieldType;
 
@@ -25,29 +15,35 @@ typedef uint32_t DataFieldType;
 extern uint32_t success_count;
 
 typedef struct {
+  // # of entries in node
+  uint32_t node_size_ = 0;
+
+  // # of mutable bits
+  uint32_t mutable_size_ = 0;
+
   // keys
-  KeyFieldType keys_[MAX_KEYS];
+  KeyFieldType* keys_;
 
   // fake pointers to child nodes
-  DataFieldType values_[MAX_KEYS_PLUS_ONE];
+  DataFieldType* values_;
 
-  // number of keys stored in node
-  int offset_ = 0;
+  // # of entries currently stored in node
+  uint32_t offset_ = 0;
 
   // mutable bits
-  int mutable_[NUM_MUTABLE_BITS];
+  uint32_t* mutable_;
 } NodeType;
 
 class BTree {
  public:
-  BTree();
+  BTree(const configuration& state);
   ~BTree();
 
   // insert item
-  bool InsertOffset(const KeyFieldType& item);
+  bool InsertOffset(const KeyFieldType& item, bool upsert_mode);
 
   // insert item
-  bool InsertMutable(const KeyFieldType& item);
+  bool InsertMutable(const KeyFieldType& item, bool upsert_mode);
 
   // dump tree's contents
   void Dump(void);
@@ -55,5 +51,5 @@ class BTree {
  public:
 
   // storage for current node being worked on
-  NodeType current_node_;
+  NodeType node_;
 };
