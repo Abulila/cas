@@ -7,7 +7,7 @@
 #include <cstdint>
 
 // max number of keys in a node
-const uint32_t MAX_KEYS = 1000000;
+const uint32_t MAX_KEYS = 1000;
 const uint32_t MAX_KEYS_PLUS_ONE = MAX_KEYS + 1;
 
 // min number of keys in a node
@@ -19,6 +19,8 @@ const long NULL_PTR = -1L;
 typedef uint32_t KeyFieldType;
 
 typedef uint32_t DataFieldType;
+
+extern thread_local uint32_t success_count;
 
 typedef struct {
   // keys
@@ -42,7 +44,7 @@ class BTree {
   // dump tree's contents
   void Dump(void);
 
- private:
+ public:
 
   // storage for current node being worked on
   NodeType current_node_;
