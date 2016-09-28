@@ -39,7 +39,12 @@ BTree::BTree(const configuration& state){
 }
 
 BTree::~BTree(){
-  // Nothing to do here!
+
+  // Deallocate space
+  delete[] node_.keys_;
+  delete[] node_.values_;
+  delete[] node_.mutable_;
+
 }
 
 bool BTree::InsertOffset(const KeyFieldType& key){

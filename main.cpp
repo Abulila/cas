@@ -174,11 +174,12 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
 
 }
 
+std::vector<uint32_t> keys;
+
 void InsertOffset(BTree *tree, uint32_t op_count, uint32_t key_count){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    auto key = rand() % key_count;
-    tree->InsertOffset(key);
+    tree->InsertOffset(keys[op_itr]);
   }
 
 }
@@ -186,8 +187,7 @@ void InsertOffset(BTree *tree, uint32_t op_count, uint32_t key_count){
 void InsertMutable(BTree *tree, uint32_t op_count, uint32_t key_count){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    auto key = rand() % key_count;
-    tree->InsertMutable(key);
+    tree->InsertMutable(keys[op_itr]);
   }
 
 }
@@ -206,9 +206,13 @@ int main(int argc, char **argv) {
   Timer<> timer;
   std::vector<std::thread> thread_group;
 
-  for(uint32_t loop_itr = 0;
-      loop_itr < loop_count;
-      ++loop_itr) {
+  // Build distribution
+  for(uint32_t op_itr = 0; op_itr < op_count; ++op_itr){
+    auto key = rand()%key_count;
+    keys.push_back(key);
+  }
+
+  for(uint32_t loop_itr = 0; loop_itr < loop_count; ++loop_itr) {
 
     thread_group.clear();
 
@@ -219,9 +223,7 @@ int main(int argc, char **argv) {
     timer.Start();
 
     // Launch a group of threads
-    for (uint32_t thread_itr = 0;
-        thread_itr < thread_count;
-        ++thread_itr) {
+    for (uint32_t thread_itr = 0; thread_itr < thread_count; ++thread_itr) {
 
       if(state.synch_mode_type == SYNCH_MODE_TYPE_OFFSET) {
         thread_group.push_back(std::thread(InsertOffset,
