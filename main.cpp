@@ -12,15 +12,23 @@
 #include "btree.h"
 #include "timer.h"
 
-void Insert(BTree *tree){
+void InsertOffset(BTree *tree){
 
 
   for(uint32_t key_itr = 0; key_itr < MAX_KEYS; key_itr++) {
     auto key = key_itr;
-    tree->Insert(key);
+    tree->InsertOffset(key);
   }
 
-  //std::cout << "Success: " << success_count << "\n";
+}
+
+void InsertMutable(BTree *tree){
+
+
+  for(uint32_t key_itr = 0; key_itr < MAX_KEYS; key_itr++) {
+    auto key = key_itr;
+    tree->InsertMutable(key);
+  }
 
 }
 
@@ -48,7 +56,7 @@ int main(void){
     for (uint32_t thread_itr = 0;
         thread_itr < num_threads;
         ++thread_itr) {
-      thread_group.push_back(std::thread(Insert, &tree));
+      thread_group.push_back(std::thread(InsertMutable, &tree));
     }
 
     // Join the threads with the main thread
@@ -61,11 +69,15 @@ int main(void){
     // Stop timer
     timer.Stop();
 
-    std::sort(tree.current_node_.keys_, tree.current_node_.keys_ + tree.current_node_.offset_);
-    bool contains_duplicates = (std::unique(tree.current_node_.keys_,
-                                            tree.current_node_.keys_ + tree.current_node_.offset_) !=
-                                                tree.current_node_.keys_ + tree.current_node_.offset_);
+    /*
+    auto start = tree.current_node_.keys_;
+    auto end = start + tree.current_node_.offset_;
+    std::sort(start, end);
+    auto unique = std::unique(start, end);
+    auto contains_duplicates = (unique != end);
     assert(contains_duplicates == false);
+    */
+
   }
 
   auto duration = timer.GetDuration();

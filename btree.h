@@ -16,6 +16,8 @@ const uint32_t MIN_KEYS = MAX_KEYS/2;
 // null pointer
 const long NULL_PTR = -1L;
 
+const uint32_t NUM_MUTABLE_BITS = 8;
+
 typedef uint32_t KeyFieldType;
 
 typedef uint32_t DataFieldType;
@@ -31,6 +33,9 @@ typedef struct {
 
   // number of keys stored in node
   int offset_ = 0;
+
+  // mutable bits
+  int mutable_[NUM_MUTABLE_BITS];
 } NodeType;
 
 class BTree {
@@ -39,7 +44,10 @@ class BTree {
   ~BTree();
 
   // insert item
-  bool Insert(const KeyFieldType& item);
+  bool InsertOffset(const KeyFieldType& item);
+
+  // insert item
+  bool InsertMutable(const KeyFieldType& item);
 
   // dump tree's contents
   void Dump(void);
