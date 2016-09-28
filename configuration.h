@@ -30,9 +30,6 @@ class configuration {
   // # of loops
   uint32_t loop_count;
 
-  // upsert mode ?
-  bool upsert_mode;
-
 };
 
 extern configuration state;

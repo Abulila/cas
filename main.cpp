@@ -26,7 +26,6 @@ void Usage(FILE *out) {
           "   -m --mutable-size      :  # of mutable entries \n"
           "   -t --thread-count      :  # of threads \n"
           "   -l --loop-count        :  # of loops \n"
-          "   -u --upsert-mode       :  upsert mode \n"
   );
 }
 
@@ -36,7 +35,6 @@ static struct option opts[] = {
     { "mutable-size", optional_argument, NULL, 'm'},
     { "thread-count", optional_argument, NULL, 't'},
     { "loop-count", optional_argument, NULL, 'l'},
-    { "upsert-mode", optional_argument, NULL, 'u'},
     { NULL, 0, NULL, 0}
 };
 
@@ -104,15 +102,6 @@ void ValidateLoopCount(const configuration &state) {
   printf("%s : %d\n", "loop_count", state.loop_count);
 }
 
-void ValidateUpsertMode(const configuration &state) {
-  if (state.upsert_mode == false) {
-    printf("%s : INSERT\n", "upsert_mode");
-  }
-  else {
-    printf("%s : UPSERT\n", "upsert_mode");
-  }
-}
-
 void ParseArguments(int argc, char *argv[], configuration &state) {
   // Default Values
   state.synch_mode_type = SYNCH_MODE_TYPE_OFFSET;
@@ -120,12 +109,11 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.mutable_size = 64;
   state.loop_count = 1000;
   state.thread_count = 4;
-  state.upsert_mode = false;
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "hk:t:l:s:m:u:", opts, &idx);
+    int c = getopt_long(argc, argv, "hk:t:l:s:m:", opts, &idx);
 
     if (c == -1) break;
 
@@ -144,9 +132,6 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
         break;
       case 'm':
         state.mutable_size = atoi(optarg);
-        break;
-      case 'u':
-        state.upsert_mode = atoi(optarg);
         break;
 
       case 'h':
@@ -168,26 +153,25 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateThreadCount(state);
   ValidateLoopCount(state);
   ValidateSynchModeType(state);
-  ValidateUpsertMode(state);
 
   printf("----------------------------------\n\n");
 
 }
 
-void InsertOffset(BTree *tree, uint32_t key_count, bool upsert_mode){
+void InsertOffset(BTree *tree, uint32_t key_count){
 
   for(uint32_t key_itr = 0; key_itr < key_count; key_itr++) {
     auto key = rand() % key_count;
-    tree->InsertOffset(key, upsert_mode);
+    tree->InsertOffset(key);
   }
 
 }
 
-void InsertMutable(BTree *tree, uint32_t key_count, bool upsert_mode){
+void InsertMutable(BTree *tree, uint32_t key_count){
 
   for(uint32_t key_itr = 0; key_itr < key_count; key_itr++) {
     auto key = rand() % key_count;
-    tree->InsertMutable(key, upsert_mode);
+    tree->InsertMutable(key);
   }
 
 }
@@ -200,6 +184,7 @@ int main(int argc, char **argv) {
 
   uint32_t thread_count = state.thread_count;
   uint32_t loop_count = state.loop_count;
+  uint32_t key_count = state.node_size/thread_count;
 
   Timer<> timer;
   std::vector<std::thread> thread_group;
@@ -224,14 +209,12 @@ int main(int argc, char **argv) {
       if(state.synch_mode_type == SYNCH_MODE_TYPE_OFFSET) {
         thread_group.push_back(std::thread(InsertOffset,
                                            &tree,
-                                           state.node_size,
-                                           state.upsert_mode));
+                                           key_count));
       }
       else if(state.synch_mode_type == SYNCH_MODE_TYPE_MUTABLE) {
         thread_group.push_back(std::thread(InsertMutable,
                                            &tree,
-                                           state.node_size,
-                                           state.upsert_mode));
+                                           key_count));
       }
 
     }
@@ -258,8 +241,12 @@ int main(int argc, char **argv) {
 
   auto duration = timer.GetDuration();
 
-  std::cout << "Duration: " << duration << "\n";
-  std::cout << "Success count: " << success_count/loop_count << "\n";
+  std::cout << "Duration           : " << duration << "\n";
+  std::cout << "Success count      : " << success_count/loop_count << "\n";
+  std::cout << "Found count        : " << found_count/loop_count << "\n";
+  std::cout << "Out of space count : " << out_of_space_count/loop_count << "\n";
+  std::cout << "Fail count         : " << fail_count/loop_count << "\n";
+  std::cout << "Retry count        : " << retry_count/loop_count << "\n";
 
   //tree.Dump();
 

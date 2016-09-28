@@ -13,6 +13,10 @@ typedef uint32_t KeyFieldType;
 typedef uint32_t DataFieldType;
 
 extern uint32_t success_count;
+extern uint32_t found_count;
+extern uint32_t out_of_space_count;
+extern uint32_t fail_count;
+extern uint32_t retry_count;
 
 typedef struct {
   // # of entries in node
@@ -40,10 +44,10 @@ class BTree {
   ~BTree();
 
   // insert item
-  bool InsertOffset(const KeyFieldType& item, bool upsert_mode);
+  bool InsertOffset(const KeyFieldType& key);
 
   // insert item
-  bool InsertMutable(const KeyFieldType& item, bool upsert_mode);
+  bool InsertMutable(const KeyFieldType& key);
 
   // dump tree's contents
   void Dump(void);

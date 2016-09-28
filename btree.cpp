@@ -7,6 +7,10 @@
 #include "btree.h"
 
 uint32_t success_count = 0;
+uint32_t found_count = 0;
+uint32_t out_of_space_count = 0;
+uint32_t fail_count = 0;
+uint32_t retry_count = 0;
 
 BTree::BTree(const configuration& state){
 
@@ -38,7 +42,7 @@ BTree::~BTree(){
   // Nothing to do here!
 }
 
-bool BTree::InsertOffset(const KeyFieldType& item, bool upsert_mode){
+bool BTree::InsertOffset(const KeyFieldType& key){
 
   uint32_t value_itr = 0;
 
@@ -48,16 +52,17 @@ bool BTree::InsertOffset(const KeyFieldType& item, bool upsert_mode){
     uint32_t old_value = node_.offset_;
 
     if(old_value == node_.node_size_){
+      out_of_space_count++;
+      fail_count++;
       return false;
     }
 
-    // Check for upsert mode
-    if(upsert_mode == false) {
-      // Search for key till horizon
-      for(; value_itr < old_value; value_itr++) {
-        if(node_.keys_[value_itr] == item){
-          return false;
-        }
+    // Search for key till horizon
+    for(; value_itr < old_value; value_itr++) {
+      if(node_.keys_[value_itr] == key){
+        found_count++;
+        fail_count++;
+        return false;
       }
     }
 
@@ -67,12 +72,13 @@ bool BTree::InsertOffset(const KeyFieldType& item, bool upsert_mode){
 
     // Success
     if(result == old_value){
-      node_.keys_[old_value] = item;
+      node_.keys_[old_value] = key;
       success_count++;
       return true;
     }
     // Retry
     else {
+      retry_count++;
       continue;
     }
 
@@ -80,58 +86,54 @@ bool BTree::InsertOffset(const KeyFieldType& item, bool upsert_mode){
 
 }
 
-bool BTree::InsertMutable(const KeyFieldType& item, bool upsert_mode){
+bool BTree::InsertMutable(const KeyFieldType& item){
 
   uint32_t value_itr = 0;
 
   while(1) {
 
-    // Claim slot
-    uint32_t slot = __sync_fetch_and_add(&node_.offset_, 1);
-
-    // Release logical space
-    if(slot >= node_.node_size_){
+    // Check space
+    if(node_.offset_ >= node_.node_size_){
+      out_of_space_count++;
+      fail_count++;
       return false;
     }
 
+    // Claim logical space
     uint32_t* logical_slot = nullptr;
 
-    // Check for upsert mode
-    if(upsert_mode == false) {
+    uint32_t hash = item % node_.mutable_size_;
+    logical_slot = node_.mutable_ + hash;
 
-      uint32_t hash = item % node_.mutable_size_;
-      logical_slot = node_.mutable_ + hash;
+    bool status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
 
-      // Claim logical space
-      bool status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
+    // Retry
+    if(status == false){
+      retry_count++;
+      continue;
+    }
 
-      // Retry
-      if(status == false){
-        continue;
+    // Claim slot
+    uint32_t slot = __sync_fetch_and_add(&node_.offset_, 1);
+
+    // Search for key till horizon
+    for(; value_itr < slot; value_itr++) {
+      if(node_.keys_[value_itr] == item){
+        found_count++;
+        fail_count++;
+
+        // Release logical space
+        *logical_slot = 0;
+        return false;
       }
-
-      // Search for key till horizon
-      for(; value_itr < slot; value_itr++) {
-        if(node_.keys_[value_itr] == item){
-          // Release logical space
-          *logical_slot = 0;
-          return false;
-        }
-      }
-
     }
 
     // Success
     node_.keys_[slot] = item;
     success_count++;
 
-    // Check for upsert mode
-    if(upsert_mode == false) {
-
-      // Release logical space
-      *logical_slot = 0;
-
-    }
+    // Release logical space
+    *logical_slot = 0;
 
     return true;
   }
