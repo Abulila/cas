@@ -14,9 +14,8 @@
 
 void InsertOffset(BTree *tree){
 
-
   for(uint32_t key_itr = 0; key_itr < MAX_KEYS; key_itr++) {
-    auto key = key_itr;
+    auto key = rand() % MAX_KEYS;
     tree->InsertOffset(key);
   }
 
@@ -24,9 +23,8 @@ void InsertOffset(BTree *tree){
 
 void InsertMutable(BTree *tree){
 
-
   for(uint32_t key_itr = 0; key_itr < MAX_KEYS; key_itr++) {
-    auto key = key_itr;
+    auto key = rand() % MAX_KEYS;
     tree->InsertMutable(key);
   }
 
@@ -56,7 +54,7 @@ int main(void){
     for (uint32_t thread_itr = 0;
         thread_itr < num_threads;
         ++thread_itr) {
-      thread_group.push_back(std::thread(InsertMutable, &tree));
+      thread_group.push_back(std::thread(InsertOffset, &tree));
     }
 
     // Join the threads with the main thread
@@ -83,6 +81,7 @@ int main(void){
   auto duration = timer.GetDuration();
 
   std::cout << "Duration: " << duration << "\n";
+  std::cout << "Success count: " << success_count/num_loops << "\n";
 
   //tree.Dump();
 

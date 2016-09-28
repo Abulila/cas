@@ -6,7 +6,7 @@
 
 #include "btree.h"
 
-thread_local uint32_t success_count = 0;
+uint32_t success_count = 0;
 
 BTree::BTree(){
   current_node_.offset_ = 0;

@@ -22,7 +22,7 @@ typedef uint32_t KeyFieldType;
 
 typedef uint32_t DataFieldType;
 
-extern thread_local uint32_t success_count;
+extern uint32_t success_count;
 
 typedef struct {
   // keys
