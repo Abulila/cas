@@ -66,6 +66,7 @@ bool BTree::InsertOffset(const KeyFieldType& key){
       }
     }
 
+
     // Claim slot
     uint32_t new_value = old_value + 1;
     uint32_t result = __sync_val_compare_and_swap(&node_.offset_, old_value,  new_value);
@@ -86,25 +87,26 @@ bool BTree::InsertOffset(const KeyFieldType& key){
 
 }
 
-bool BTree::InsertMutable(const KeyFieldType& item){
+bool BTree::InsertMutable(const KeyFieldType& key){
 
   uint32_t value_itr = 0;
 
   while(1) {
 
-    // Check space
-    if(node_.offset_ >= node_.node_size_){
+    // Claim slot
+    uint32_t slot = __sync_fetch_and_add(&node_.offset_, 1);
+
+    // Release logical space
+    if(slot >= node_.node_size_){
       out_of_space_count++;
       fail_count++;
       return false;
     }
 
+    uint32_t hash = key % node_.mutable_size_;
+    uint32_t* logical_slot = node_.mutable_ + hash;
+
     // Claim logical space
-    uint32_t* logical_slot = nullptr;
-
-    uint32_t hash = item % node_.mutable_size_;
-    logical_slot = node_.mutable_ + hash;
-
     bool status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
 
     // Retry
@@ -113,12 +115,9 @@ bool BTree::InsertMutable(const KeyFieldType& item){
       continue;
     }
 
-    // Claim slot
-    uint32_t slot = __sync_fetch_and_add(&node_.offset_, 1);
-
     // Search for key till horizon
     for(; value_itr < slot; value_itr++) {
-      if(node_.keys_[value_itr] == item){
+      if(node_.keys_[value_itr] == key){
         found_count++;
         fail_count++;
 
@@ -129,7 +128,7 @@ bool BTree::InsertMutable(const KeyFieldType& item){
     }
 
     // Success
-    node_.keys_[slot] = item;
+    node_.keys_[slot] = key;
     success_count++;
 
     // Release logical space
@@ -139,7 +138,6 @@ bool BTree::InsertMutable(const KeyFieldType& item){
   }
 
 }
-
 
 void BTree::Dump(void){
 
