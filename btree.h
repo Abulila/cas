@@ -16,7 +16,7 @@ const uint32_t MIN_KEYS = MAX_KEYS/2;
 // null pointer
 const long NULL_PTR = -1L;
 
-const uint32_t NUM_MUTABLE_BITS = 8;
+const uint32_t NUM_MUTABLE_BITS = 64;
 
 typedef uint32_t KeyFieldType;
 

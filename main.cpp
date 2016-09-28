@@ -33,7 +33,7 @@ void InsertMutable(BTree *tree){
 int main(void){
 
   uint32_t num_threads = 4;
-  uint32_t num_loops = 10000;
+  uint32_t num_loops = 1000;
 
   Timer<> timer;
   std::vector<std::thread> thread_group;
