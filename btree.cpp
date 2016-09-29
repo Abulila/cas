@@ -138,93 +138,84 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
 
   uint32_t slot_itr = 0;
   uint32_t slot_offset = 0;
+  bool key_match = false;
   timer.Start();
 
   // Hash first character
   uint32_t hash = key[0] % node_.mutable_size_;
   auto logical_slot = node_.mutable_ + hash;
 
-  while(1) {
+  // Look up slot to be claimed
+  uint32_t claimed_slot_offset = node_.offset_;
 
-    // Look up slot to be claimed
-    uint32_t claimed_slot_offset = node_.offset_;
-
-    // Check if out of bounds
-    if(claimed_slot_offset + key_length >= node_.node_size_){
-      out_of_space_count++;
-      fail_count++;
-      goto finish;
-    }
-
-    // Claim logical space
-    bool cas_status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
-
-    // Retry
-    if(cas_status == false){
-      retry_count++;
-      continue;
-    }
-
-    // Claim offset slot
-    claimed_slot_offset = __sync_fetch_and_add(&node_.offset_, key_length);
-
-    // Check if out of bounds
-    if(claimed_slot_offset >= node_.node_size_){
-      out_of_space_count++;
-      fail_count++;
-      goto finish;
-    }
-
-    // Search all keys till horizon
-    bool key_match = false;
-    for(; slot_offset < claimed_slot_offset ; ) {
-      bool visible = node_.visible_[slot_itr];
-      // TODO:
-      //uint32_t slot_length = node_.slot_lengths_[slot_itr];
-      uint32_t slot_length = max_key_length;
-
-      // Check only visible keys
-      if(visible == true) {
-
-        // Compare key lengths
-        bool equal_length = (slot_length == key_length);
-        if(equal_length == true) {
-          // Compare key data
-          if(strncmp(node_.keys_ + slot_offset, key, key_length) == 0){
-            key_match = true;
-          }
-        }
-
-      }
-
-      // Go to next slot
-      slot_offset += slot_length;
-      slot_itr++;
-    }
-
-    if(key_match == true){
-      found_count++;
-      fail_count++;
-
-      // Release logical space if key exists
-      *logical_slot = 0;
-      // TODO:
-      //node_.slot_lengths_[slot_itr] = key_length;
-      goto finish;
-    }
-
-    // Copy over key and key_length and make it visible
-    memcpy(node_.keys_ + claimed_slot_offset, key, key_length);
-    // TODO:
-    //node_.slot_lengths_[slot_itr] = key_length;
-    node_.visible_[slot_itr] = true;
-
-    success_count++;
-
-    // Release logical space after completing operation
-    *logical_slot = 0;
+  // Check if out of bounds
+  if(claimed_slot_offset + key_length >= node_.node_size_){
+    out_of_space_count++;
+    fail_count++;
     goto finish;
   }
+
+  // Claim logical space
+  while(__sync_bool_compare_and_swap(logical_slot, 0, 1) == false){
+  }
+
+  // Claim offset slot
+  claimed_slot_offset = __sync_fetch_and_add(&node_.offset_, key_length);
+
+  // Check if out of bounds
+  if(claimed_slot_offset >= node_.node_size_){
+    out_of_space_count++;
+    fail_count++;
+    goto finish;
+  }
+
+  // Search all keys till horizon
+  for(; slot_offset < claimed_slot_offset ; ) {
+    bool visible = node_.visible_[slot_itr];
+    // TODO:
+    //uint32_t slot_length = node_.slot_lengths_[slot_itr];
+    uint32_t slot_length = max_key_length;
+
+    // Check only visible keys
+    if(visible == true) {
+
+      // Compare key lengths
+      bool equal_length = (slot_length == key_length);
+      if(equal_length == true) {
+        // Compare key data
+        if(strncmp(node_.keys_ + slot_offset, key, key_length) == 0){
+          key_match = true;
+        }
+      }
+
+    }
+
+    // Go to next slot
+    slot_offset += slot_length;
+    slot_itr++;
+  }
+
+  if(key_match == true){
+    found_count++;
+    fail_count++;
+
+    // Release logical space if key exists
+    *logical_slot = 0;
+    // TODO:
+    //node_.slot_lengths_[slot_itr] = key_length;
+    goto finish;
+  }
+
+  // Copy over key and key_length and make it visible
+  memcpy(node_.keys_ + claimed_slot_offset, key, key_length);
+  // TODO:
+  //node_.slot_lengths_[slot_itr] = key_length;
+  node_.visible_[slot_itr] = true;
+
+  success_count++;
+
+  // Release logical space after completing operation
+  *logical_slot = 0;
 
   finish:
   timer.Stop();
