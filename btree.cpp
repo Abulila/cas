@@ -17,6 +17,9 @@ uint32_t retry_count = 0;
 // Key generation
 uint32_t max_key_length = 10;
 
+// Thread local timer
+thread_local Timer<std::ratio<1,1000000>> timer;
+
 BTree::BTree(const configuration& state){
 
   // Init
@@ -50,12 +53,11 @@ BTree::~BTree(){
 
 }
 
-bool BTree::InsertOffset(const KeyFieldType* key,
-                         uint32_t key_length){
+uint32_t BTree::InsertOffset(const KeyFieldType* key,
+                             uint32_t key_length){
 
   uint32_t slot_itr = 0;
   uint32_t slot_offset = 0;
-  bool status = false;
   timer.Start();
 
   while(1){
@@ -67,7 +69,6 @@ bool BTree::InsertOffset(const KeyFieldType* key,
     if(claimed_slot_offset + key_length >= node_.node_size_){
       out_of_space_count++;
       fail_count++;
-      status = false;
       goto finish;
     }
 
@@ -91,7 +92,6 @@ bool BTree::InsertOffset(const KeyFieldType* key,
       if(key_match == true){
         found_count++;
         fail_count++;
-        status = false;
         goto finish;
       }
 
@@ -113,7 +113,6 @@ bool BTree::InsertOffset(const KeyFieldType* key,
       node_.visible_[slot_itr] = true;
 
       success_count++;
-      status = true;
       goto finish;
     }
     // Retry based on new horizon
@@ -126,15 +125,16 @@ bool BTree::InsertOffset(const KeyFieldType* key,
 
   finish:
   timer.Stop();
-  return status;
+
+  uint32_t duration = timer.GetDuration();
+  return duration;
 }
 
-bool BTree::InsertMutable(const KeyFieldType* key,
-                          uint32_t key_length){
+uint32_t BTree::InsertMutable(const KeyFieldType* key,
+                              uint32_t key_length){
 
   uint32_t slot_itr = 0;
   uint32_t slot_offset = 0;
-  bool status = false;
   timer.Start();
 
   while(1) {
@@ -146,7 +146,6 @@ bool BTree::InsertMutable(const KeyFieldType* key,
     if(current_slot_offset + key_length >= node_.node_size_){
       out_of_space_count++;
       fail_count++;
-      status = false;
       goto finish;
     }
 
@@ -231,7 +230,9 @@ bool BTree::InsertMutable(const KeyFieldType* key,
 
   finish:
   timer.Stop();
-  return status;
+
+  uint32_t duration = timer.GetDuration();
+  return duration;
 }
 
 void BTree::Dump(void){
@@ -243,9 +244,4 @@ void BTree::Dump(void){
   }
   std::cout << "\n";
 
-}
-
-double BTree::GetDuration(){
-  auto duration = timer.GetDuration();
-  return duration;
 }

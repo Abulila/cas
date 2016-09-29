@@ -9,12 +9,15 @@
 #include <algorithm>
 #include <cassert>
 #include <getopt.h>
+#include <atomic>
 
 #include "btree.h"
 #include "configuration.h"
 
 // Configuration
 configuration state;
+
+std::atomic<uint32_t> duration(0);
 
 void Usage(FILE *out) {
   fprintf(out,
@@ -192,7 +195,8 @@ void InsertOffset(BTree *tree, uint32_t op_count, uint32_t thread_id){
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
     auto key_length = 1 + rand() % max_key_length;
     std::string key = GetRandomString(key_length);
-    tree->InsertOffset(key.c_str(), key_length);
+    auto op_duration = tree->InsertOffset(key.c_str(), key_length);
+    duration += op_duration;
   }
 
 }
@@ -202,7 +206,8 @@ void InsertMutable(BTree *tree, uint32_t op_count, uint32_t thread_id){
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
     auto key_length = 1 + rand() % max_key_length;
     std::string key = GetRandomString(key_length);
-    tree->InsertMutable(key.c_str(), key_length);
+    auto op_duration = tree->InsertMutable(key.c_str(), key_length);
+    duration += op_duration;
   }
 
 }
@@ -218,8 +223,6 @@ int main(int argc, char **argv) {
   uint32_t op_count = state.op_count;
 
   std::vector<std::thread> thread_group;
-
-  double duration = 0;
 
   for(uint32_t loop_itr = 0; loop_itr < loop_count; ++loop_itr) {
 
@@ -253,9 +256,6 @@ int main(int argc, char **argv) {
       thread_group[thread_itr].join();
     }
 
-    // Update duration
-    duration += tree.GetDuration();
-
     /*
     auto start = tree.current_node_.keys_;
     auto end = start + tree.current_node_.offset_;
@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
     */
   }
 
-  std::cout << "Duration           : " << duration << "\n";
+  std::cout << "Duration           : " << duration/loop_count << "\n";
   std::cout << "Success count      : " << success_count/loop_count << "\n";
   std::cout << "Found count        : " << found_count/loop_count << "\n";
   std::cout << "Out of space count : " << out_of_space_count/loop_count << "\n";

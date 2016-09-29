@@ -20,6 +20,9 @@ extern uint32_t retry_count;
 // Key generation
 extern uint32_t max_key_length;
 
+// Thread local timer
+extern thread_local Timer<std::ratio<1,1000000>> timer;
+
 typedef struct {
   // # of entries in node
   uint32_t node_size_ = 0;
@@ -49,22 +52,17 @@ class BTree {
   ~BTree();
 
   // insert item
-  bool InsertOffset(const KeyFieldType* key, uint32_t key_len);
+  uint32_t InsertOffset(const KeyFieldType* key, uint32_t key_len);
 
   // insert item
-  bool InsertMutable(const KeyFieldType* key, uint32_t key_len);
+  uint32_t InsertMutable(const KeyFieldType* key, uint32_t key_len);
 
   // dump tree's contents
   void Dump(void);
-
-  // get duration
-  double GetDuration();
 
  public:
 
   // storage for current node being worked on
   NodeType node_;
-
-  Timer<> timer;
 
 };
