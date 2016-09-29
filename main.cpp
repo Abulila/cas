@@ -193,7 +193,8 @@ std::string GetRandomString(size_t length ){
 void InsertOffset(BTree *tree, uint32_t op_count, uint32_t thread_id){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    auto key_length = 1 + rand() % max_key_length;
+    auto key_length = max_key_length;
+    //auto key_length = 1 + rand() % max_key_length;
     std::string key = GetRandomString(key_length);
     auto op_duration = tree->InsertOffset(key.c_str(), key_length);
     duration += op_duration;
@@ -204,7 +205,8 @@ void InsertOffset(BTree *tree, uint32_t op_count, uint32_t thread_id){
 void InsertMutable(BTree *tree, uint32_t op_count, uint32_t thread_id){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    auto key_length = 1 + rand() % max_key_length;
+    auto key_length = max_key_length;
+    //auto key_length = 1 + rand() % max_key_length;
     std::string key = GetRandomString(key_length);
     auto op_duration = tree->InsertMutable(key.c_str(), key_length);
     duration += op_duration;

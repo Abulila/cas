@@ -79,7 +79,9 @@ uint32_t BTree::InsertOffset(const KeyFieldType* key,
       }
 
       // Compare key lengths
-      uint32_t slot_length = node_.slot_lengths_[slot_itr];
+      // TODO:
+      //uint32_t slot_length = node_.slot_lengths_[slot_itr];
+      uint32_t slot_length = max_key_length;
       bool key_match = false;
       bool equal_length = (slot_length == key_length);
       if(equal_length == true) {
@@ -109,7 +111,8 @@ uint32_t BTree::InsertOffset(const KeyFieldType* key,
 
       // Copy over key and key_length and make it visible
       memcpy(node_.keys_ + claimed_slot_offset, key, key_length);
-      node_.slot_lengths_[slot_itr] = key_length;
+      // TODO:
+      //node_.slot_lengths_[slot_itr] = key_length;
       node_.visible_[slot_itr] = true;
 
       success_count++;
@@ -139,11 +142,11 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
 
   while(1) {
 
-    // Look up current slot
-    uint32_t current_slot_offset = node_.offset_;
+    // Look up slot to be claimed
+    uint32_t claimed_slot_offset = node_.offset_;
 
     // Check if out of bounds
-    if(current_slot_offset + key_length >= node_.node_size_){
+    if(claimed_slot_offset + key_length >= node_.node_size_){
       out_of_space_count++;
       fail_count++;
       goto finish;
@@ -154,22 +157,21 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
     uint32_t* logical_slot = node_.mutable_ + hash;
 
     // Claim logical space
-    bool status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
+    bool cas_status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
 
     // Retry
-    if(status == false){
+    if(cas_status == false){
       retry_count++;
       continue;
     }
 
     // Claim offset slot
-    uint32_t claimed_slot_offset = __sync_fetch_and_add(&node_.offset_, key_length);
+    claimed_slot_offset = __sync_fetch_and_add(&node_.offset_, key_length);
 
     // Check if out of bounds
     if(claimed_slot_offset >= node_.node_size_){
       out_of_space_count++;
       fail_count++;
-      status = false;
       goto finish;
     }
 
@@ -177,7 +179,9 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
     bool key_match = false;
     for(; slot_offset < claimed_slot_offset ; ) {
       bool visible = node_.visible_[slot_itr];
-      uint32_t slot_length = node_.slot_lengths_[slot_itr];
+      // TODO:
+      //uint32_t slot_length = node_.slot_lengths_[slot_itr];
+      uint32_t slot_length = max_key_length;
 
       // Check only visible keys
       if(visible == true) {
@@ -196,10 +200,6 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
       // Go to next slot
       slot_offset += slot_length;
       slot_itr++;
-
-      if(slot_itr == node_.node_size_ - 1){
-        break;
-      }
     }
 
     if(key_match == true){
@@ -208,23 +208,21 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
 
       // Release logical space if key exists
       *logical_slot = 0;
-      status = false;
-      node_.slot_lengths_[slot_itr] = key_length;
-
+      // TODO:
+      //node_.slot_lengths_[slot_itr] = key_length;
       goto finish;
     }
 
     // Copy over key and key_length and make it visible
     memcpy(node_.keys_ + claimed_slot_offset, key, key_length);
-    node_.slot_lengths_[slot_itr] = key_length;
+    // TODO:
+    //node_.slot_lengths_[slot_itr] = key_length;
     node_.visible_[slot_itr] = true;
 
     success_count++;
 
     // Release logical space after completing operation
     *logical_slot = 0;
-
-    status = true;
     goto finish;
   }
 
