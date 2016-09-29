@@ -142,7 +142,7 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
 
   // Hash first character
   uint32_t hash = key[0] % node_.mutable_size_;
-  uint32_t* logical_slot = node_.mutable_ + hash;
+  auto logical_slot = node_.mutable_ + hash;
 
   while(1) {
 

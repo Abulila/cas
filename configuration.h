@@ -33,6 +33,9 @@ class configuration {
   // # of ops
   uint32_t op_count;
 
+  // key size
+  uint32_t max_key_size;
+
 };
 
 extern configuration state;

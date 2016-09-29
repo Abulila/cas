@@ -29,6 +29,7 @@ void Usage(FILE *out) {
           "   -t --thread-count      :  # of threads \n"
           "   -l --loop-count        :  # of loops \n"
           "   -o --op-count          :  # of ops \n"
+          "   -z --key-size          :  max key size \n"
   );
 }
 
@@ -39,6 +40,7 @@ static struct option opts[] = {
     { "thread-count", optional_argument, NULL, 't'},
     { "loop-count", optional_argument, NULL, 'l'},
     { "op-count", optional_argument, NULL, 'o'},
+    { "key-size", optional_argument, NULL, 'z'},
     { NULL, 0, NULL, 0}
 };
 
@@ -115,6 +117,16 @@ void ValidateOpCount(const configuration &state) {
   printf("%s : %d\n", "op_count", state.op_count);
 }
 
+
+void ValidateKeySize(const configuration &state) {
+  if (state.max_key_size <= 0) {
+    printf("Invalid max_key_size :: %d\n", state.max_key_size);
+    exit(EXIT_FAILURE);
+  }
+
+  printf("%s : %d\n", "max_key_size", state.max_key_size);
+}
+
 void ParseArguments(int argc, char *argv[], configuration &state) {
   // Default Values
   state.synch_mode_type = SYNCH_MODE_TYPE_OFFSET;
@@ -123,11 +135,12 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   state.thread_count = 4;
   state.loop_count = 1000;
   state.op_count = state.node_size/state.thread_count;
+  state.max_key_size = 10;
 
   // Parse args
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "hs:k:m:o:t:l:", opts, &idx);
+    int c = getopt_long(argc, argv, "hs:k:m:o:t:l:z:", opts, &idx);
 
     if (c == -1) break;
 
@@ -150,6 +163,9 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
       case 'l':
         state.loop_count = atoi(optarg);
         break;
+      case 'z':
+        state.max_key_size = atoi(optarg);
+        break;
 
       case 'h':
         Usage(stderr);
@@ -171,12 +187,13 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   ValidateLoopCount(state);
   ValidateMutableSize(state);
   ValidateOpCount(state);
+  ValidateKeySize(state);
 
   printf("----------------------------------\n\n");
 
 }
 
-std::string GetRandomString(size_t length ){
+std::string GetRandomString(size_t length){
     auto randchar = []() -> char {
         const char charset[] =
         "0123456789"
@@ -223,6 +240,7 @@ int main(int argc, char **argv) {
   uint32_t thread_count = state.thread_count;
   uint32_t loop_count = state.loop_count;
   uint32_t op_count = state.op_count;
+  max_key_length = state.max_key_size;
 
   std::vector<std::thread> thread_group;
 

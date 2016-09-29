@@ -40,10 +40,10 @@ typedef struct {
   volatile bool *visible_;
 
   // # of entries currently stored in node
-  uint32_t offset_ = 0;
+  volatile uint32_t offset_ = 0;
 
   // mutable bits
-  uint32_t* mutable_;
+  volatile uint32_t* mutable_;
 } NodeType;
 
 class BTree {
