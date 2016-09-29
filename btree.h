@@ -18,9 +18,7 @@ extern uint32_t fail_count;
 extern uint32_t retry_count;
 
 // Key generation
-extern char* key_data;
-extern uint32_t fixed_key_length;
-extern uint32_t max_offset_length;
+extern uint32_t max_key_length;
 
 typedef struct {
   // # of entries in node
@@ -29,11 +27,14 @@ typedef struct {
   // # of mutable bits
   uint32_t mutable_size_ = 0;
 
+  // slot lengths
+  uint32_t* slot_lengths_;
+
   // keys
   KeyFieldType* keys_;
 
   // visibility bits
-  bool *visible_;
+  volatile bool *visible_;
 
   // # of entries currently stored in node
   uint32_t offset_ = 0;

@@ -173,19 +173,26 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
 
 }
 
-std::vector<uint32_t> key_lengths;
-std::vector<uint32_t> key_offsets;
+std::string GetRandomString(size_t length ){
+    auto randchar = []() -> char {
+        const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
+}
 
 void InsertOffset(BTree *tree, uint32_t op_count, uint32_t thread_id){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    auto key_itr = op_itr * thread_id;
-
-    auto key_offset = key_offsets[key_itr];
-    auto key_length = key_lengths[key_itr];
-
-    KeyFieldType* key = key_data + key_offset;
-    tree->InsertOffset(key, key_length);
+    auto key_length = 1 + rand() % max_key_length;
+    std::string key = GetRandomString(key_length);
+    tree->InsertOffset(key.c_str(), key_length);
   }
 
 }
@@ -193,13 +200,9 @@ void InsertOffset(BTree *tree, uint32_t op_count, uint32_t thread_id){
 void InsertMutable(BTree *tree, uint32_t op_count, uint32_t thread_id){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    auto key_itr = op_itr * thread_id;
-
-    auto key_offset = key_offsets[key_itr];
-    auto key_length = key_lengths[key_itr];
-
-    KeyFieldType* key = key_data + key_offset;
-    tree->InsertMutable(key, key_length);
+    auto key_length = 1 + rand() % max_key_length;
+    std::string key = GetRandomString(key_length);
+    tree->InsertMutable(key.c_str(), key_length);
   }
 
 }
@@ -215,16 +218,6 @@ int main(int argc, char **argv) {
   uint32_t op_count = state.op_count;
 
   std::vector<std::thread> thread_group;
-
-  // Build key length and offset distribution
-  uint32_t key_count = op_count * (thread_count + 1);
-  for(uint32_t key_itr = 0; key_itr < key_count; ++key_itr){
-    uint32_t key_length = fixed_key_length;
-    uint32_t key_offset = rand() % max_offset_length;
-
-    key_lengths.push_back(key_length);
-    key_offsets.push_back(key_offset);
-  }
 
   double duration = 0;
 
