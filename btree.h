@@ -18,7 +18,7 @@ extern uint32_t retry_count;
 
 // Key generation
 extern char* key_data;
-extern uint32_t max_key_length;
+extern uint32_t fixed_key_length;
 extern uint32_t max_offset_length;
 
 typedef struct {
@@ -30,9 +30,6 @@ typedef struct {
 
   // keys
   KeyFieldType* keys_;
-
-  // offset array
-  uint32_t* slot_lengths_;
 
   // visibility bits
   bool *visible_;

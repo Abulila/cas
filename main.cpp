@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
   // Build key length and offset distribution
   uint32_t key_count = op_count * (thread_count + 1);
   for(uint32_t key_itr = 0; key_itr < key_count; ++key_itr){
-    uint32_t key_length = 1 + rand() % max_key_length;
+    uint32_t key_length = fixed_key_length;
     uint32_t key_offset = rand() % max_offset_length;
 
     key_lengths.push_back(key_length);
