@@ -104,10 +104,10 @@ uint32_t BTree::InsertOffset(const KeyFieldType* key,
 
     // Claimed offset slot by checking for "stable horizon"
     uint32_t next_slot_offset = claimed_slot_offset + key_length;
-    uint32_t result = __sync_val_compare_and_swap(&node_.offset_, claimed_slot_offset,  next_slot_offset);
+    uint32_t cas_status = __sync_bool_compare_and_swap(&node_.offset_, claimed_slot_offset,  next_slot_offset);
 
     // Successful insert
-    if(result == claimed_slot_offset){
+    if(cas_status == true){
 
       // Copy over key and key_length and make it visible
       memcpy(node_.keys_ + claimed_slot_offset, key, key_length);
@@ -140,6 +140,10 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
   uint32_t slot_offset = 0;
   timer.Start();
 
+  // Hash first character
+  uint32_t hash = key[0] % node_.mutable_size_;
+  uint32_t* logical_slot = node_.mutable_ + hash;
+
   while(1) {
 
     // Look up slot to be claimed
@@ -151,10 +155,6 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
       fail_count++;
       goto finish;
     }
-
-    // Hash first character
-    uint32_t hash = key[0] % node_.mutable_size_;
-    uint32_t* logical_slot = node_.mutable_ + hash;
 
     // Claim logical space
     bool cas_status = __sync_bool_compare_and_swap(logical_slot, 0, 1);
