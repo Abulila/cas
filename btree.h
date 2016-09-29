@@ -8,15 +8,18 @@
 
 #include "configuration.h"
 
-typedef uint32_t KeyFieldType;
-
-typedef uint32_t DataFieldType;
+typedef char KeyFieldType;
 
 extern uint32_t success_count;
 extern uint32_t found_count;
 extern uint32_t out_of_space_count;
 extern uint32_t fail_count;
 extern uint32_t retry_count;
+
+// Key generation
+extern char* key_data;
+extern uint32_t max_key_length;
+extern uint32_t max_offset_length;
 
 typedef struct {
   // # of entries in node
@@ -28,8 +31,11 @@ typedef struct {
   // keys
   KeyFieldType* keys_;
 
-  // fake pointers to child nodes
-  DataFieldType* values_;
+  // offset array
+  uint32_t* slot_lengths_;
+
+  // visibility bits
+  bool *visible_;
 
   // # of entries currently stored in node
   uint32_t offset_ = 0;
@@ -44,10 +50,10 @@ class BTree {
   ~BTree();
 
   // insert item
-  bool InsertOffset(const KeyFieldType& key);
+  bool InsertOffset(const KeyFieldType* key, uint32_t key_len);
 
   // insert item
-  bool InsertMutable(const KeyFieldType& key);
+  bool InsertMutable(const KeyFieldType* key, uint32_t key_len);
 
   // dump tree's contents
   void Dump(void);
