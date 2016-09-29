@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "configuration.h"
+#include "timer.h"
 
 typedef char KeyFieldType;
 
@@ -55,8 +56,14 @@ class BTree {
   // dump tree's contents
   void Dump(void);
 
+  // get duration
+  double GetDuration();
+
  public:
 
   // storage for current node being worked on
   NodeType node_;
+
+  Timer<> timer;
+
 };

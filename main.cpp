@@ -11,7 +11,6 @@
 #include <getopt.h>
 
 #include "btree.h"
-#include "timer.h"
 #include "configuration.h"
 
 // Configuration
@@ -215,7 +214,6 @@ int main(int argc, char **argv) {
   uint32_t loop_count = state.loop_count;
   uint32_t op_count = state.op_count;
 
-  Timer<> timer;
   std::vector<std::thread> thread_group;
 
   // Build key length and offset distribution
@@ -228,6 +226,8 @@ int main(int argc, char **argv) {
     key_offsets.push_back(key_offset);
   }
 
+  double duration = 0;
+
   for(uint32_t loop_itr = 0; loop_itr < loop_count; ++loop_itr) {
 
     thread_group.clear();
@@ -235,10 +235,7 @@ int main(int argc, char **argv) {
     // Construct btree instance
     BTree tree(state);
 
-    // Start timer
-    timer.Start();
-
-    // Launch a group of threads
+     // Launch a group of threads
     for (uint32_t thread_itr = 0; thread_itr < thread_count; ++thread_itr) {
 
       if(state.synch_mode_type == SYNCH_MODE_TYPE_OFFSET) {
@@ -263,8 +260,8 @@ int main(int argc, char **argv) {
       thread_group[thread_itr].join();
     }
 
-    // Stop timer
-    timer.Stop();
+    // Update duration
+    duration += tree.GetDuration();
 
     /*
     auto start = tree.current_node_.keys_;
@@ -275,8 +272,6 @@ int main(int argc, char **argv) {
     assert(contains_duplicates == false);
     */
   }
-
-  auto duration = timer.GetDuration();
 
   std::cout << "Duration           : " << duration << "\n";
   std::cout << "Success count      : " << success_count/loop_count << "\n";
