@@ -176,18 +176,20 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
 
 std::vector<uint32_t> keys;
 
-void InsertOffset(BTree *tree, uint32_t op_count, uint32_t key_count){
+void InsertOffset(BTree *tree, uint32_t op_count, uint32_t thread_id){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    tree->InsertOffset(keys[op_itr]);
+    auto key_itr = op_itr * thread_id;
+    tree->InsertOffset(keys[key_itr]);
   }
 
 }
 
-void InsertMutable(BTree *tree, uint32_t op_count, uint32_t key_count){
+void InsertMutable(BTree *tree, uint32_t op_count, uint32_t thread_id){
 
   for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
-    tree->InsertMutable(keys[op_itr]);
+    auto key_itr = op_itr * thread_id;
+    tree->InsertMutable(keys[key_itr]);
   }
 
 }
@@ -201,14 +203,15 @@ int main(int argc, char **argv) {
   uint32_t thread_count = state.thread_count;
   uint32_t loop_count = state.loop_count;
   uint32_t op_count = state.op_count;
-  uint32_t key_count = state.node_size;
 
   Timer<> timer;
   std::vector<std::thread> thread_group;
 
   // Build distribution
-  for(uint32_t op_itr = 0; op_itr < op_count; ++op_itr){
-    auto key = rand()%key_count;
+
+  uint32_t key_count = op_count * (thread_count + 1);
+  for(uint32_t key_itr = 0; key_itr < key_count; ++key_itr){
+    auto key = rand() % UINT32_MAX;
     keys.push_back(key);
   }
 
@@ -229,13 +232,13 @@ int main(int argc, char **argv) {
         thread_group.push_back(std::thread(InsertOffset,
                                            &tree,
                                            op_count,
-                                           key_count));
+                                           thread_itr + 1));
       }
       else if(state.synch_mode_type == SYNCH_MODE_TYPE_MUTABLE) {
         thread_group.push_back(std::thread(InsertMutable,
                                            &tree,
                                            op_count,
-                                           key_count));
+                                           thread_itr + 1));
       }
 
     }
