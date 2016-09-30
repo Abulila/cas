@@ -58,6 +58,7 @@ uint32_t BTree::InsertOffset(const KeyFieldType* key,
 
   uint32_t slot_itr = 0;
   uint32_t slot_offset = 0;
+  timer.Reset();
 
   while(1){
 
@@ -70,18 +71,16 @@ uint32_t BTree::InsertOffset(const KeyFieldType* key,
       fail_count++;
       goto finish;
     }
-
+    
     // Search all keys till horizon
     for(; slot_offset < claimed_slot_offset ; ) {
-
+      
       timer.Start();
-
+      
       // Wait for key to become visible
       while(node_.visible_[slot_itr] == false){
       }
-
-      timer.Stop();
-
+     
       // Compare key lengths
       // TODO:
       //uint32_t slot_length = node_.slot_lengths_[slot_itr];
@@ -95,6 +94,8 @@ uint32_t BTree::InsertOffset(const KeyFieldType* key,
         }
       }
 
+      timer.Stop();
+      
       if(key_match == true){
         found_count++;
         fail_count++;
@@ -107,22 +108,23 @@ uint32_t BTree::InsertOffset(const KeyFieldType* key,
     }
 
     timer.Start();
-
+    
     // Claimed offset slot by checking for "stable horizon"
     uint32_t next_slot_offset = claimed_slot_offset + key_length;
     uint32_t cas_status = __sync_bool_compare_and_swap(&node_.offset_, claimed_slot_offset,  next_slot_offset);
 
     timer.Stop();
-
+    
     // Successful insert
     if(cas_status == true){
+
 
       // Copy over key and key_length and make it visible
       memcpy(node_.keys_ + claimed_slot_offset, key, key_length);
       // TODO:
       //node_.slot_lengths_[slot_itr] = key_length;
       node_.visible_[slot_itr] = true;
-
+    
       success_count++;
       goto finish;
     }
@@ -145,6 +147,7 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
   uint32_t slot_itr = 0;
   uint32_t slot_offset = 0;
   bool key_match = false;
+  timer.Reset();
 
   // Hash first character
   uint32_t hash = key[0] % node_.mutable_size_;
@@ -161,16 +164,16 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
   }
 
   timer.Start();
-
+  
   // Claim logical space
   while(__sync_bool_compare_and_swap(logical_slot, 0, 1) == false){
   }
 
-  timer.Stop();
-
   // Claim offset slot
   claimed_slot_offset = __sync_fetch_and_add(&node_.offset_, key_length);
 
+  timer.Stop();
+  
   // Check if out of bounds
   if(claimed_slot_offset >= node_.node_size_){
     out_of_space_count++;
@@ -178,6 +181,8 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
     goto finish;
   }
 
+  timer.Start();
+  
   // Search all keys till horizon
   for(; slot_offset < claimed_slot_offset ; ) {
     bool visible = node_.visible_[slot_itr];
@@ -203,6 +208,8 @@ uint32_t BTree::InsertMutable(const KeyFieldType* key,
     slot_offset += slot_length;
     slot_itr++;
   }
+    
+  timer.Stop();
 
   if(key_match == true){
     found_count++;
