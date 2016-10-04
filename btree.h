@@ -30,13 +30,13 @@ typedef struct {
   // # of mutable bits
   uint32_t mutable_size_ = 0;
 
-  // slot lengths
-  uint32_t* slot_lengths_;
+  // slot length
+  uint32_t* slot_length_;
 
-  // keys
-  KeyFieldType* keys_;
+  // key
+  KeyFieldType* key_;
 
-  // visibility bits
+  // visibility bit
   volatile bool *visible_;
 
   // # of entries currently stored in node
@@ -44,6 +44,23 @@ typedef struct {
 
   // mutable bits
   volatile uint32_t* mutable_;
+
+  // HYBRID
+
+  // # of entries in logical node
+  uint32_t logical_node_size_ = 0;
+
+  // slot length
+  uint32_t** slot_lengths_;
+
+  // key
+  KeyFieldType** keys_;
+
+  // visibility bit
+  volatile bool** visibles_;
+
+  // # of entries currently stored in node
+  volatile uint32_t* offsets_ = 0;
 } NodeType;
 
 class BTree {
@@ -56,6 +73,9 @@ class BTree {
 
   // insert item
   uint32_t InsertMutable(const KeyFieldType* key, uint32_t key_len);
+
+  // insert item
+  uint32_t InsertHybrid(const KeyFieldType* key, uint32_t key_len);
 
   // dump tree's contents
   void Dump(void);

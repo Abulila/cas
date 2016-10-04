@@ -10,7 +10,8 @@ enum SynchModeType {
   SYNCH_MODE_TYPE_INVALID = 0,
 
   SYNCH_MODE_TYPE_OFFSET = 1,
-  SYNCH_MODE_TYPE_MUTABLE = 2
+  SYNCH_MODE_TYPE_MUTABLE = 2,
+  SYNCH_MODE_TYPE_HYBRID = 3
 };
 
 class configuration {

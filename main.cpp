@@ -54,6 +54,10 @@ std::string SynchModeTypeToString(SynchModeType synch_mode_type){
       return "MUTABLE";
       break;
 
+    case SYNCH_MODE_TYPE_HYBRID:
+      return "HYBRID";
+      break;
+
     default:
     case SYNCH_MODE_TYPE_INVALID:
       break;
@@ -64,7 +68,8 @@ std::string SynchModeTypeToString(SynchModeType synch_mode_type){
 
 void ValidateSynchModeType(const configuration &state) {
   if (state.synch_mode_type != SYNCH_MODE_TYPE_OFFSET &&
-      state.synch_mode_type != SYNCH_MODE_TYPE_MUTABLE) {
+      state.synch_mode_type != SYNCH_MODE_TYPE_MUTABLE &&
+      state.synch_mode_type != SYNCH_MODE_TYPE_HYBRID) {
     printf("Invalid synch_mode_type : %s\n", SynchModeTypeToString(state.synch_mode_type).c_str());
     exit(EXIT_FAILURE);
   }
@@ -131,7 +136,7 @@ void ParseArguments(int argc, char *argv[], configuration &state) {
   // Default Values
   state.synch_mode_type = SYNCH_MODE_TYPE_OFFSET;
   state.node_size = 1000;
-  state.mutable_size = 64;
+  state.mutable_size = 4;
   state.thread_count = 4;
   state.loop_count = 1000;
   state.op_count = state.node_size/state.thread_count;
@@ -231,6 +236,18 @@ void InsertMutable(BTree *tree, uint32_t op_count, uint32_t thread_id){
 
 }
 
+void InsertHybrid(BTree *tree, uint32_t op_count, uint32_t thread_id){
+
+  for(uint32_t op_itr = 0; op_itr < op_count; op_itr++) {
+    auto key_length = max_key_length;
+    //auto key_length = 1 + rand() % max_key_length;
+    std::string key = GetRandomString(key_length);
+    auto op_duration = tree->InsertHybrid(key.c_str(), key_length);
+    duration += op_duration;
+  }
+
+}
+
 int main(int argc, char **argv) {
 
 
@@ -262,6 +279,12 @@ int main(int argc, char **argv) {
       }
       else if(state.synch_mode_type == SYNCH_MODE_TYPE_MUTABLE) {
         thread_group.push_back(std::thread(InsertMutable,
+                                           &tree,
+                                           op_count,
+                                           thread_itr + 1));
+      }
+      else if(state.synch_mode_type == SYNCH_MODE_TYPE_HYBRID) {
+        thread_group.push_back(std::thread(InsertHybrid,
                                            &tree,
                                            op_count,
                                            thread_itr + 1));
